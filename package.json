@@ -1,0 +1,25 @@
+{
+  "name": "marked-writer",
+  "main": "index.html",
+  "single-instance": true,
+  "dom_storage_quota": 40,
+  "window": {
+    "title": "Marked Writer",
+    "icon": "img/markedwriter.png",
+    "position": "center",
+    "resizable": true,
+    "width": 1100,
+    "min_width": 675,
+    "height": 680,
+    "min_height": 650
+  },
+  "__JSON_NOTE": "All paths are relative to this json file",
+  "dependencies": {
+    "xmlrpc": "~1.1.1",
+    "marked": "~0.3.0",
+    "highlight.js": "~7.5.0",
+    "async": "~0.2.9",
+    "lodash": "~2.4.1",
+    "sqlite3": "~2.1.19"
+  }
+}
