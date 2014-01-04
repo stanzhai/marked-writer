@@ -67,13 +67,19 @@ a {
     text-align: left;
 }
     #nav .pure-menu a:hover,
-    #nav .pure-menu a:focus,
+    #nav .pure-menu a:focus {
+        background: rgb(55, 60, 90);
+        -webkit-transition: all .4s;
+        transition: all .4s;
+    }
     #nav .pure-menu-select {
         background: rgb(55, 60, 90);
     }
     #nav .pure-menu a {
         color: #fff;
         margin-left: 0.5em;
+        -webkit-transition: all .4s;
+        transition: all .4s;
     }
     #nav .pure-menu-heading {
         border-bottom: none;
@@ -170,62 +176,105 @@ a {
             margin-bottom: 0.3em;
         }
 
-
-@media (max-width: 867px) {
-
-    #list,
-    #main {
-        width: 100%;
-    }
-    #layout {
-        padding-left: -150px;
-    }
-    #list {
-        height: 33%;
-        border-right: 0;
-        border-bottom: 1px solid #ddd;
-    }
-    #main {
-        position: fixed;
-        top: 33%;
-        right: 0;
-        bottom: 0;
-        left: 150px;
-        overflow: auto;
-        width: auto; /* so that it's not 100% */
-    }
+#layout {
+    padding-left: -150px;
 }
-
-@media (max-width: 480px) {
-    #layout, #nav, #list, #main {
-        position: static;
-        margin: 0;
-        padding: 0;
+#title-bar {
+    left: 150px;
+    height: 40px;
+    -webkit-app-region: drag;
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    -moz-box-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: end;
+    -webkit-justify-content: flex-end;
+    -moz-box-pack: end;
+    -ms-flex-pack: end;
+    justify-content: flex-end;
+    -webkit-box-shadow: 0px 1px 2px #d9d9d9;
+    box-shadow: 0px 1px 2px #d9d9d9;
+}
+    .title-bar-control:hover {
+        color: #00aff0;
+        background: #d7f4ff;
+        -webkit-transition: all .4s;
+        transition: all .4s;
     }
-    #nav {
-        width: 100%;
-        height: 40px;
+    .title-bar-control {
+        -webkit-app-region: no-drag;
+        margin: 5px 5px 5px 0;
+        padding-left: 7px;
         position: relative;
+        width: 23px;
+        height: 30px;
+        line-height: 35px;
+        color: #888;
+        cursor: pointer;
+        -webkit-transition: all .4s;
+        transition: all .4s;
     }
-    #nav .nav-menu-button {
-        display: block;
-        top: 0.5em;
-        right: 0.5em;
-        position: absolute;
-    }
-    #nav.active {
-        height: 80%;
-    }
-    .nav-inner {
-        display: none;
-    }
-    #nav.active .nav-inner {
-        display: block;
-    }
-    .blog-avatar {
-        width: 40px;
-        height: 40px;
-    }
+.footer-bar {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    -moz-box-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: end;
+    -webkit-justify-content: flex-end;
+    -moz-box-pack: end;
+    -ms-flex-pack: end;
+    justify-content: flex-end;
+    height: 45px;
+    width: 100%;
+    background: #00aff0;
+    bottom: 0;
+    color: white;
+}
+.round-icon {
+    display: block;
+    width: 30px;
+    height: 23px;
+    padding-top: 6px;
+    border: 1px solid #fff;
+    text-align: center;
+    border-radius: 50%;
+    margin: 6px;
+    cursor: pointer;
+    float: right;
+    -webkit-transition: all .4s;
+    transition: all .4s;
+}
+.round-icon:hover {
+    color: #00aff0;
+    background: #fff;
+    -webkit-transition: all .4s;
+    transition: all .4s;
+}
+.tab-content {
+    position: fixed;
+    top: 45px;
+    right: 0;
+    bottom: 0;
+    left: 150px;
+    overflow: auto;
+    width: auto; /* so that it's not 100% */
+}
+.hide { display: none;}
+
+.title, .pure-menu-heading {
+    cursor: default;
 }
 
 #logo {
@@ -233,7 +282,9 @@ a {
     margin-top: -20px;
     margin-bottom: 5px;
 }
-
 #editor {
     height: 600px;
+    margin: 5px 10px 10px;
 }
+
+.page-content { padding-top: 20px; padding-left: 50px;}

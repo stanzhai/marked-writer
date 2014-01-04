@@ -6,51 +6,83 @@
   <title>Marked Writer</title>
   <link rel="stylesheet" href="css/pure-min.css">
   <link rel="stylesheet" href="css/layouts/blog.css">
+  <link rel="stylesheet" href="css/icomoon/style.css">
+  <script type="text/javascript" src="js/jquery.min.js"></script>
+  <script type="text/javascript" src="js/knockout-3.0.0.js"></script>
   <script type="text/javascript">
-    var md = require('./markdown.js');
-    var async = require('async');
-    var sqlite3 = require('sqlite3').verbose();
+    var md = require('./markdown.js')
+      , async = require('async')
+      , sqlite3 = require('sqlite3').verbose();
+    // page view model
+    function ViewModel() {
+      var self = this;
+      // blog count
+      self.all_count = ko.observable(0);
+      self.local_count = ko.observable(0);
+      self.publish_count = ko.computed(function() {
+        return self.all_count() - self.local_count();
+      }, self);
+      self.delete_count = ko.observable(0);
+      // settings
+      self.settings = ko.observable();
+      // blog list
+    }
+    var viewModel = new ViewModel();
+
     var db = new sqlite3.Database('data.db');
-      db.serialize(function() {
-        /*
-      db.run("CREATE TABLE lorem (info TEXT)");
-
-      var stmt = db.prepare("INSERT INTO lorem VALUES (?)");
-      for (var i = 0; i < 10; i++) {
-          stmt.run("Ipsum " + i);
-      }
-      stmt.finalize();
-      */
-
-      db.each("SELECT rowid AS id, info FROM lorem", function(err, row) {
-          console.log(row.id + ": " + row.info);
+    // create db schema if not create
+    db.serialize(function() {
+      db.get('SELECT count(*) as count FROM sqlite_master WHERE type="table" AND name="blog";', function (err, data) {
+        if (data.count == 0) {
+          db.run("CREATE TABLE blog (title TEXT, content TEXT, create_at DATE, is_delete NUMBER, weblog_id TEXT)");
+          db.run("CREATE TABLE config (settings TEXT)");
+        } else {
+          db.get('select count(*) as count from blog where is_delete = 0', function (err, data) { viewModel.all_count(data.count);})
+          db.get('select count(*) as count from blog where is_delete = 0 and weblog_id = ?', '', function (err, data) { viewModel.local_count(data.count);})
+          db.get('select count(*) as count from blog where is_delete = 1', function (err, data) { viewModel.delete_count(data.count);})
+        }
       });
     });
-
-    db.close();
+    // close db
+    //db.close();
   </script>
-  <script type="text/javascript" src="js/jquery.min.js"></script>
   <script type="text/javascript" src="js/ace.js"></script>
   <script type="text/javascript" src="js/keybinding-vim.js"></script>
   <script type="text/javascript" src="js/theme-dreamweaver.js"></script>
   <script type="text/javascript" src="js/mode-markdown.js"></script>
   <script type="text/javascript">
     function setEditorHeight() {
-      var editorHeight = $(window).height() - $('#editor').offset().top - 20;
+      var editorHeight = $(window).height() - $('#editor').offset().top - 55;
       $('#editor').css('height', editorHeight);
     }
     $(window).resize(setEditorHeight);
     $(document).ready(function () {
+      ko.applyBindings(viewModel);
       setEditorHeight();
       // ace编辑器设置
       var editor = ace.edit('editor');
       editor.setTheme("ace/theme/dreamweaver");
       var MarkdownMode = require("ace/mode/markdown").Mode;
       editor.getSession().setMode(new MarkdownMode());
+      // 初始化编辑信息
+      editor.setValue('title: \r\ndate: 2013-04-08\r\ncategories: []\r\n---\r\n');
+
       $('.pure-menu a').click(function () {
-        $('.pure-menu a').removeClass('pure-menu-select');
-        $(this).addClass('pure-menu-select');
+        var self = this;
+        if ($(this).hasClass('pure-menu-select')) {
+          return false;
+        }
+        var pervTab = $('.pure-menu-select').attr('href');
+        $(pervTab).slideUp('fast', function () {
+          $('.pure-menu-select').removeClass('pure-menu-select');
+
+          var currentTab = $(self).attr('href');
+          $(currentTab).slideDown('fast', function () { $(self).removeClass('hide'); });
+          $(self).addClass('pure-menu-select');
+        });
+
       });
+
       $('#perview').click(function () {
         var mdBlog = editor.getValue();
         $('#blog-content').html(md(mdBlog));
@@ -67,21 +99,40 @@
       <a class="title">Marked Writer</a>
       <div class="pure-menu pure-menu-open">
         <ul>
-          <li><a class="pure-menu-select" href="#">新博文</a></li>
-          <li><a href="#">博文 <span class="blog-count">(2)</span></a></li>
-          <li><a href="#">未发布</a></li>
-          <li><a href="#">已发布</a></li>
-          <li><a href="#">垃圾箱</a></li>
+          <li><a class="pure-menu-select" href="#writer"><span class="icon-quill"></span> 新博文</a></li>
+          <li><a href="#all-list"><span class="icon-list"></span> 博文 <span class="blog-count">(<span data-bind="text: all_count"></span>)</span></a></li>
+          <li><a href="#local-list"><span class="icon-disk"></span> 未发布 <span class="blog-count">(<span data-bind="text: local_count"></span>)</span></a></li>
+          <li><a href="#publish-list"><span class="icon-arrow-up"></span> 已发布 <span class="blog-count">(<span data-bind="text: publish_count"></span>)</span></a></li>
+          <li><a href="#delete-list"><span class="icon-remove2"></span> 垃圾箱 <span class="blog-count">(<span data-bind="text: delete_count"></span>)</span></a></li>
           <li class="pure-menu-heading">选项</li>
-          <li><a href="#"><span class="blog-label-personal"></span>设置</a></li>
-          <li><a href="#"><span class="blog-label-work"></span>关于</a></li>
-          <li><a href="#"><span class="blog-label-travel"></span>帮助</a></li>
+          <li><a href="#settings"><span class="icon-cog"></span> 设置</a></li>
+          <li><a href="#help"><span class="icon-info"></span> 帮助</a></li>
         </ul>
       </div>
     </div>
   </div>
 
-  <div class="pure-u-1" id="list">
+  <div id="title-bar">
+    <div class="title-bar-control"><span class="icon-minus"></span></div>
+    <div class="title-bar-control"><span class="icon-expand"></span></div>
+    <div class="title-bar-control"><span class="icon-close"></span></div>
+  </div>
+
+  <div id="writer" class="tab-content pure-u-1">
+    <div id="editor">
+      title: 
+      date: 2013-04-08
+      categories: []
+      ---
+    </div>
+    <div class="footer-bar">
+      <span class="round-icon icon-disk"></span>
+      <span class="round-icon icon-arrow-up"></span>
+      <span class="round-icon icon-eye"></span>
+    </div>
+  </div>
+
+  <div id="all-list" class="tab-content hide pure-u-1">
     <div class="blog-item blog-item-selected pure-g">
       <div class="pure-u">
         <h4 class="blog-subject">C#入门经典文章系列全集，很好看的哦</h4>
@@ -91,32 +142,83 @@
         </p>
       </div>
     </div>
-
   </div>
 
-  <div class="pure-u-1" id="main">
-    <div class="blog-content">
-      <div class="blog-content-header pure-g">
-        <div class="pure-u-2-3">
-          <h1 class="blog-content-title">C#入门经典文章系列全集，很好看的哦</h1>
-          <p class="blog-content-subtitle">
-            <span>2013年12月31日23:59:45</span>
-          </p>
-        </div>
-
-        <div class="pure-u-1-3 blog-content-controls">
-          <button id="save" class="pure-button secondary-button">保存</button>
-          <button id="publish" class="pure-button secondary-button">发布</button>
-          <button id="perview" class="pure-button secondary-button">预览</button>
-        </div>
-      </div>
-
-      <div class="blog-content-body">
-        <div id="editor"></div>
-        <div id="blog-content"></div>
+  <div id="local-list" class="tab-content hide pure-u-1">
+    <div class="blog-item blog-item-selected pure-g">
+      <div class="pure-u">
+        <h4 class="blog-subject">C#入门经典文章系列全集，很好看的哦</h4>
+        <h5 class="blog-time">2013年12月31日23:58:20</h5>
+        <p class="blog-desc">
+          Hey, I just wanted to check in with you from Toronto. I got here earlier today.
+        </p>
       </div>
     </div>
   </div>
+
+  <div id="publish-list" class="tab-content hide pure-u-1">
+    <div class="blog-item blog-item-selected pure-g">
+      <div class="pure-u">
+        <h4 class="blog-subject">C#入门经典文章系列全集，很好看的哦</h4>
+        <h5 class="blog-time">2013年12月31日23:58:20</h5>
+        <p class="blog-desc">
+          Hey, I just wanted to check in with you from Toronto. I got here earlier today.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div id="delete-list" class="tab-content hide pure-u-1">
+    <div class="blog-item blog-item-selected pure-g">
+      <div class="pure-u">
+        <h4 class="blog-subject">C#入门经典文章系列全集，很好看的哦</h4>
+        <h5 class="blog-time">2013年12月31日23:58:20</h5>
+        <p class="blog-desc">
+          Hey, I just wanted to check in with you from Toronto. I got here earlier today.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div id="settings" class="tab-content hide page-content pure-u-1">
+    <div class="pure-form pure-form-aligned">
+      <fieldset>
+        <legend>发布设置</legend>
+        <div class="pure-control-group">
+            <label for="blog-url">您的日志网址</label>
+            <input class="pure-input-1-2" id="blog-url" name="blog-url" type="text" placeholder="http://www.abc.com/">
+        </div>
+        <div class="pure-control-group">
+            <label for="user-name">用户名</label>
+            <input class="pure-input-1-2" id="user-name" type="text" placeholder="日志登陆用户名">
+        </div>
+        <div class="pure-control-group">
+            <label for="password">密码</label>
+            <input class="pure-input-1-2" id="password" name="password" type="password" placeholder="密码">
+        </div>
+        <div class="pure-controls">
+            <button type="submit" class="pure-button">发布测试</button>
+        </div>
+        <legend>编辑设置</legend>
+        <div class="pure-controls">
+            <label for="cb" class="pure-checkbox">
+                <input id="cb" type="checkbox"> 启用VI编辑模式
+            </label>
+
+            <button type="submit" class="pure-button pure-button-primary">保存设置</button>
+        </div>
+      </fieldset>
+    </div>
+  </div>
+
+  <div id="help" class="tab-content hide page-content pure-u-1">
+    <img src="img/markedwriter.png" />
+    <h2>关于Marked Writer</h2>
+    <p>
+      Marked Writer是一个基于Markdown语法的开源跨平台的博客发布系统。
+    </p>
+  </div>
+
 </div>
 
 </body>
