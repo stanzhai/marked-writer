@@ -264,7 +264,7 @@ a {
 }
 .tab-content {
     position: fixed;
-    top: 45px;
+    top: 40px;
     right: 0;
     bottom: 0;
     left: 150px;
@@ -284,7 +284,7 @@ a {
 }
 #editor {
     height: 600px;
-    margin: 5px 10px 10px;
+    font-size: 12px;
 }
 
 .page-content { padding-top: 20px; padding-left: 50px;}

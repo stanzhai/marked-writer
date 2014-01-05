@@ -24,7 +24,8 @@
       }, self);
       self.delete_count = ko.observable(0);
       // settings
-      self.settings = ko.observable();
+      self.settings = ko.observable({blog_url:'', user_name:'', password:'', vim:true, dark_theme:true, line_num:false});
+      self.update_settings = function () { setEditorConfig(self.settings()); return true;}
       // blog list
     }
     var viewModel = new ViewModel();
@@ -37,9 +38,9 @@
           db.run("CREATE TABLE blog (title TEXT, content TEXT, create_at DATE, is_delete NUMBER, weblog_id TEXT)");
           db.run("CREATE TABLE config (settings TEXT)");
         } else {
-          db.get('select count(*) as count from blog where is_delete = 0', function (err, data) { viewModel.all_count(data.count);})
-          db.get('select count(*) as count from blog where is_delete = 0 and weblog_id = ?', '', function (err, data) { viewModel.local_count(data.count);})
-          db.get('select count(*) as count from blog where is_delete = 1', function (err, data) { viewModel.delete_count(data.count);})
+          db.get('select count(*) as count from blog where is_delete = 0', function (err, data) { viewModel.all_count(data.count);});
+          db.get('select count(*) as count from blog where is_delete = 0 and weblog_id = ?', '', function (err, data) { viewModel.local_count(data.count);});
+          db.get('select count(*) as count from blog where is_delete = 1', function (err, data) { viewModel.delete_count(data.count);});
         }
       });
     });
@@ -49,23 +50,46 @@
   <script type="text/javascript" src="js/ace.js"></script>
   <script type="text/javascript" src="js/keybinding-vim.js"></script>
   <script type="text/javascript" src="js/theme-dreamweaver.js"></script>
+  <script type="text/javascript" src="js/theme-cobalt.js"></script>
   <script type="text/javascript" src="js/mode-markdown.js"></script>
   <script type="text/javascript">
+    // update editor config
+    function setEditorConfig(settings) {
+      if (viewModel.editor) {
+        var editor = viewModel.editor;
+        editor.renderer.setShowGutter(settings.line_num);
+        if (settings.vim) {
+          editor.setKeyboardHandler(require("ace/keyboard/vim").handler);
+        } else {
+          editor.setKeyboardHandler(null);
+        }
+        if (settings.dark_theme) {
+          editor.setTheme("ace/theme/cobalt");
+        } else {
+          editor.setTheme("ace/theme/dreamweaver");
+        }
+        editor.resize();
+      }
+    }
+
     function setEditorHeight() {
-      var editorHeight = $(window).height() - $('#editor').offset().top - 55;
+      var editorHeight = $(window).height() - $('#editor').offset().top - 45;
       $('#editor').css('height', editorHeight);
     }
+
     $(window).resize(setEditorHeight);
     $(document).ready(function () {
       ko.applyBindings(viewModel);
       setEditorHeight();
       // ace编辑器设置
       var editor = ace.edit('editor');
-      editor.setTheme("ace/theme/dreamweaver");
       var MarkdownMode = require("ace/mode/markdown").Mode;
       editor.getSession().setMode(new MarkdownMode());
+      editor.setFontSize(16);
       // 初始化编辑信息
-      editor.setValue('title: \r\ndate: 2013-04-08\r\ncategories: []\r\n---\r\n');
+      editor.setValue('标题: \r\n时间: 2013-04-08\r\n---\r\n');
+      viewModel.editor = editor;
+      setEditorConfig(viewModel.settings());
 
       $('.pure-menu a').click(function () {
         var self = this;
@@ -119,12 +143,7 @@
   </div>
 
   <div id="writer" class="tab-content pure-u-1">
-    <div id="editor">
-      title: 
-      date: 2013-04-08
-      categories: []
-      ---
-    </div>
+    <div id="editor"></div>
     <div class="footer-bar">
       <span class="round-icon icon-disk"></span>
       <span class="round-icon icon-arrow-up"></span>
@@ -182,30 +201,35 @@
 
   <div id="settings" class="tab-content hide page-content pure-u-1">
     <div class="pure-form pure-form-aligned">
-      <fieldset>
+      <fieldset data-bind="with: settings">
         <legend>发布设置</legend>
         <div class="pure-control-group">
             <label for="blog-url">您的日志网址</label>
-            <input class="pure-input-1-2" id="blog-url" name="blog-url" type="text" placeholder="http://www.abc.com/">
+            <input class="pure-input-1-2" id="blog-url" data-bind="value: blog_url" type="text" placeholder="http://www.abc.com/">
         </div>
         <div class="pure-control-group">
             <label for="user-name">用户名</label>
-            <input class="pure-input-1-2" id="user-name" type="text" placeholder="日志登陆用户名">
+            <input class="pure-input-1-2" id="user-name" data-bind="value: user_name" type="text" placeholder="日志登陆用户名">
         </div>
         <div class="pure-control-group">
             <label for="password">密码</label>
-            <input class="pure-input-1-2" id="password" name="password" type="password" placeholder="密码">
+            <input class="pure-input-1-2" id="password" data-bind="value: password" type="password" placeholder="密码">
         </div>
         <div class="pure-controls">
             <button type="submit" class="pure-button">发布测试</button>
         </div>
-        <legend>编辑设置</legend>
+        <legend>编辑器设置</legend>
         <div class="pure-controls">
-            <label for="cb" class="pure-checkbox">
-                <input id="cb" type="checkbox"> 启用VI编辑模式
-            </label>
-
-            <button type="submit" class="pure-button pure-button-primary">保存设置</button>
+          <label for="theme" class="pure-checkbox">
+            <input id="theme" type="checkbox" data-bind="checked: dark_theme, click: $root.update_settings"> 使用深色主题
+          </label>
+          <label for="vim" class="pure-checkbox">
+            <input id="vim" type="checkbox" data-bind="checked: vim, click: $root.update_settings"> 启用VI编辑模式
+          </label>
+          <label for="line-num" class="pure-checkbox">
+            <input id="line-num" type="checkbox" data-bind="checked: line_num, click: $root.update_settings"> 显示行号
+          </label>
+          <button type="submit" class="pure-button pure-button-primary">保存设置</button>
         </div>
       </fieldset>
     </div>
