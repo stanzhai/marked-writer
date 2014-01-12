@@ -12,6 +12,7 @@
   <script type="text/javascript">
     var md = require('./markdown.js')
       , async = require('async')
+      , yaml = require('yamljs')
       , sqlite3 = require('sqlite3').verbose();
     // page view model
     function ViewModel() {
@@ -26,6 +27,16 @@
       // settings
       self.settings = ko.observable({blog_url:'', user_name:'', password:'', vim:true, dark_theme:true, line_num:false});
       self.update_settings = function () { setEditorConfig(self.settings()); return true;}
+      self.save_blog = function () {
+        var content = self.editor.getValue().replace(/^-{3}/, '').split('---');
+        var blog = yaml.parse(content.shift());
+        blog.content = content.join('---');
+        db.run('INSERT INTO blog(title,content,create_at) values(?,?,?)', [blog.标题, blog.content, blog.时间], function (err) {
+          if (err) {
+            console.log(err);
+          }
+        });
+      }
       // blog list
     }
     var viewModel = new ViewModel();
@@ -145,7 +156,7 @@
   <div id="writer" class="tab-content pure-u-1">
     <div id="editor"></div>
     <div class="footer-bar">
-      <span class="round-icon icon-disk"></span>
+      <span class="round-icon icon-disk" data-bind="click: save_blog"></span>
       <span class="round-icon icon-arrow-up"></span>
       <span class="round-icon icon-eye"></span>
     </div>
