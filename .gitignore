@@ -16,6 +16,9 @@ npm-debug.log
 node_modules
 
 *.db
+*.exe
+*.dll
+*.pak
 node-webkit.app
 temp.*
 demo*

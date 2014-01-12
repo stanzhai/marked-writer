@@ -24,7 +24,11 @@ a {
     background: rgb(37, 42, 58);
     text-align: center;
     padding: 2em 0;
+    -webkit-app-region: drag;
 }
+    #nav li {
+        -webkit-app-region: no-drag;
+    }
 
 #list {
     margin-left: -350px;

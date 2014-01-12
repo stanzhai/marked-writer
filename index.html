@@ -7,62 +7,114 @@
   <link rel="stylesheet" href="css/pure-min.css">
   <link rel="stylesheet" href="css/layouts/blog.css">
   <link rel="stylesheet" href="css/icomoon/style.css">
-  <script type="text/javascript" src="js/jquery.min.js"></script>
-  <script type="text/javascript" src="js/knockout-3.0.0.js"></script>
+  <script type="text/javascript" src="js/vendor/jquery.min.js"></script>
+  <script type="text/javascript" src="js/vendor/knockout-3.0.0.js"></script>
+  <script type="text/javascript" src="js/app.js"></script>
   <script type="text/javascript">
     var md = require('./markdown.js')
       , async = require('async')
-      , yaml = require('yamljs')
+      , xmlrpc = require('xmlrpc')
       , sqlite3 = require('sqlite3').verbose();
     // page view model
     function ViewModel() {
       var self = this;
+      self.blog_list = ko.observableArray();
       // blog count
-      self.all_count = ko.observable(0);
-      self.local_count = ko.observable(0);
-      self.publish_count = ko.computed(function() {
-        return self.all_count() - self.local_count();
-      }, self);
-      self.delete_count = ko.observable(0);
-      // settings
-      self.settings = ko.observable({blog_url:'', user_name:'', password:'', vim:true, dark_theme:true, line_num:false});
-      self.update_settings = function () { setEditorConfig(self.settings()); return true;}
-      self.save_blog = function () {
-        var content = self.editor.getValue().replace(/^-{3}/, '').split('---');
-        var blog = yaml.parse(content.shift());
-        blog.content = content.join('---');
-        db.run('INSERT INTO blog(title,content,create_at) values(?,?,?)', [blog.标题, blog.content, blog.时间], function (err) {
-          if (err) {
-            console.log(err);
+      self.all_count = ko.computed(function() {
+        var blogs = self.blog_list();
+        var count = 0;
+        for (var i = 0; i < blogs.length; i++) {
+          if (blogs[i].is_delete == 0) {
+            count++;
           }
-        });
+        };
+        return count;
+      }, self);
+      self.local_count = ko.computed(function() {
+        var blogs = self.blog_list();
+        var count = 0;
+        for (var i = 0; i < blogs.length; i++) {
+          if (blogs[i].weblog_id == '' && blogs[i].is_delete == 0) {
+            count++;
+          }
+        };
+        return count;
+      }, self);
+      self.publish_count = ko.computed(function() {
+        var blogs = self.blog_list();
+        var count = 0;
+        for (var i = 0; i < blogs.length; i++) {
+          if (blogs[i].weblog_id != '') {
+            count++;
+          }
+        };
+        return count;
+      }, self);
+      self.delete_count = ko.computed(function() {
+        var blogs = self.blog_list();
+        var count = 0;
+        for (var i = 0; i < blogs.length; i++) {
+          if (blogs[i].is_delete == 1) {
+            count++;
+          }
+        };
+        return count;
+      }, self);
+      // settings
+      if (localStorage.settings) {
+        self.settings = ko.observable(JSON.parse(localStorage.settings));
+      } else {
+        self.settings = ko.observable({blog_url:'', user_name:'', password:'', vim:true, dark_theme:true, line_num:false});
       }
       // blog list
     }
     var viewModel = new ViewModel();
+    // update settings
+    viewModel.update_settings = function () { 
+      setEditorConfig(this.settings()); 
+      return true;
+    };
+    // save blog to sqlite db
+    viewModel.save_blog = function () {
+      var blog = this.editor.getValue().asBlog();
+      db.run('INSERT INTO blog(title,content,summary,create_at) values(?,?,?,?)', [blog.title, blog.content, blog.summary, blog.create_at], function (err, data) {
+        if (err) {
+          console.log(err);
+        } else {
+          viewModel.blog_list.unshift(blog);
+        }
+      });
+    };
+    // minimize window
+    viewModel.minimize = function () { MarkedWriter.Window.minimize(); };
+    viewModel.maximize = function () { MarkedWriter.Window.toggleFullscreen(); setEditorHeight(); };
+    viewModel.close = function () { MarkedWriter.Window.close(); }
 
     var db = new sqlite3.Database('data.db');
     // create db schema if not create
     db.serialize(function() {
-      db.get('SELECT count(*) as count FROM sqlite_master WHERE type="table" AND name="blog";', function (err, data) {
+      db.get('select count(*) as count from sqlite_master where type="table" and name="blog";', function (err, data) {
         if (data.count == 0) {
-          db.run("CREATE TABLE blog (title TEXT, content TEXT, create_at DATE, is_delete NUMBER, weblog_id TEXT)");
-          db.run("CREATE TABLE config (settings TEXT)");
+          db.run("create table blog (id integer primary key, title text, content text, summary text, create_at date, is_delete number default(0), weblog_id text default(\'\'))");
         } else {
-          db.get('select count(*) as count from blog where is_delete = 0', function (err, data) { viewModel.all_count(data.count);});
-          db.get('select count(*) as count from blog where is_delete = 0 and weblog_id = ?', '', function (err, data) { viewModel.local_count(data.count);});
-          db.get('select count(*) as count from blog where is_delete = 1', function (err, data) { viewModel.delete_count(data.count);});
+          db.all('select id, title, summary, create_at, is_delete, weblog_id from blog order by create_at desc', function (err, rows) {
+            if (err) {
+              console.log(err);
+            } else {
+              viewModel.blog_list(rows);
+            }
+          });
         }
       });
     });
     // close db
     //db.close();
   </script>
-  <script type="text/javascript" src="js/ace.js"></script>
-  <script type="text/javascript" src="js/keybinding-vim.js"></script>
-  <script type="text/javascript" src="js/theme-dreamweaver.js"></script>
-  <script type="text/javascript" src="js/theme-cobalt.js"></script>
-  <script type="text/javascript" src="js/mode-markdown.js"></script>
+  <script type="text/javascript" src="js/vendor/ace.js"></script>
+  <script type="text/javascript" src="js/vendor/keybinding-vim.js"></script>
+  <script type="text/javascript" src="js/vendor/theme-dreamweaver.js"></script>
+  <script type="text/javascript" src="js/vendor/theme-cobalt.js"></script>
+  <script type="text/javascript" src="js/vendor/mode-markdown.js"></script>
   <script type="text/javascript">
     // update editor config
     function setEditorConfig(settings) {
@@ -98,7 +150,7 @@
       editor.getSession().setMode(new MarkdownMode());
       editor.setFontSize(16);
       // 初始化编辑信息
-      editor.setValue('标题: \r\n时间: 2013-04-08\r\n---\r\n');
+      editor.setValue('标题: \r\n时间: ' + new Date().format('yyyy-MM-dd hh:mm') + '\r\n---\r\n');
       viewModel.editor = editor;
       setEditorConfig(viewModel.settings());
 
@@ -148,9 +200,9 @@
   </div>
 
   <div id="title-bar">
-    <div class="title-bar-control"><span class="icon-minus"></span></div>
-    <div class="title-bar-control"><span class="icon-expand"></span></div>
-    <div class="title-bar-control"><span class="icon-close"></span></div>
+    <div class="title-bar-control" data-bind="click: minimize"><span class="icon-minus"></span></div>
+    <div class="title-bar-control" data-bind="click: maximize"><span class="icon-expand"></span></div>
+    <div class="title-bar-control" data-bind="click: close"><span class="icon-close"></span></div>
   </div>
 
   <div id="writer" class="tab-content pure-u-1">
@@ -162,50 +214,42 @@
     </div>
   </div>
 
-  <div id="all-list" class="tab-content hide pure-u-1">
-    <div class="blog-item blog-item-selected pure-g">
+  <div id="all-list" class="tab-content hide pure-u-1" data-bind="foreach: blog_list">
+    <div class="blog-item blog-item-selected pure-g" data-bind="if: is_delete == 0, visible: is_delete == 0">
       <div class="pure-u">
-        <h4 class="blog-subject">C#入门经典文章系列全集，很好看的哦</h4>
-        <h5 class="blog-time">2013年12月31日23:58:20</h5>
-        <p class="blog-desc">
-          Hey, I just wanted to check in with you from Toronto. I got here earlier today.
-        </p>
+        <h4 class="blog-subject" data-bind="text: title"></h4>
+        <h5 class="blog-time" data-bind="text: create_at"></h5>
+        <p class="blog-desc" data-bind="text: summary"></p>
       </div>
     </div>
   </div>
 
-  <div id="local-list" class="tab-content hide pure-u-1">
-    <div class="blog-item blog-item-selected pure-g">
+  <div id="local-list" class="tab-content hide pure-u-1" data-bind="foreach: blog_list">
+    <div class="blog-item blog-item-selected pure-g" data-bind="if: weblog_id == '', visible: weblog_id == ''">
       <div class="pure-u">
-        <h4 class="blog-subject">C#入门经典文章系列全集，很好看的哦</h4>
-        <h5 class="blog-time">2013年12月31日23:58:20</h5>
-        <p class="blog-desc">
-          Hey, I just wanted to check in with you from Toronto. I got here earlier today.
-        </p>
+        <h4 class="blog-subject" data-bind="text: title"></h4>
+        <h5 class="blog-time" data-bind="text: create_at"></h5>
+        <p class="blog-desc" data-bind="text: summary"></p>
       </div>
     </div>
   </div>
 
-  <div id="publish-list" class="tab-content hide pure-u-1">
-    <div class="blog-item blog-item-selected pure-g">
+  <div id="publish-list" class="tab-content hide pure-u-1" data-bind="foreach: blog_list">
+    <div class="blog-item blog-item-selected pure-g" data-bind="if: weblog_id != '', visible: weblog_id != ''">
       <div class="pure-u">
-        <h4 class="blog-subject">C#入门经典文章系列全集，很好看的哦</h4>
-        <h5 class="blog-time">2013年12月31日23:58:20</h5>
-        <p class="blog-desc">
-          Hey, I just wanted to check in with you from Toronto. I got here earlier today.
-        </p>
+        <h4 class="blog-subject" data-bind="text: title"></h4>
+        <h5 class="blog-time" data-bind="text: create_at"></h5>
+        <p class="blog-desc" data-bind="text: summary"></p>
       </div>
     </div>
   </div>
 
-  <div id="delete-list" class="tab-content hide pure-u-1">
-    <div class="blog-item blog-item-selected pure-g">
+  <div id="delete-list" class="tab-content hide pure-u-1" data-bind="foreach: blog_list">
+    <div class="blog-item blog-item-selected pure-g" data-bind="if: is_delete == 1, visible: is_delete == 1">
       <div class="pure-u">
-        <h4 class="blog-subject">C#入门经典文章系列全集，很好看的哦</h4>
-        <h5 class="blog-time">2013年12月31日23:58:20</h5>
-        <p class="blog-desc">
-          Hey, I just wanted to check in with you from Toronto. I got here earlier today.
-        </p>
+        <h4 class="blog-subject" data-bind="text: title"></h4>
+        <h5 class="blog-time" data-bind="text: create_at"></h5>
+        <p class="blog-desc" data-bind="text: summary"></p>
       </div>
     </div>
   </div>
@@ -227,7 +271,7 @@
             <input class="pure-input-1-2" id="password" data-bind="value: password" type="password" placeholder="密码">
         </div>
         <div class="pure-controls">
-            <button type="submit" class="pure-button">发布测试</button>
+            <button type="submit" class="pure-button pure-button-primary">发布测试</button>
         </div>
         <legend>编辑器设置</legend>
         <div class="pure-controls">
@@ -240,7 +284,6 @@
           <label for="line-num" class="pure-checkbox">
             <input id="line-num" type="checkbox" data-bind="checked: line_num, click: $root.update_settings"> 显示行号
           </label>
-          <button type="submit" class="pure-button pure-button-primary">保存设置</button>
         </div>
       </fieldset>
     </div>

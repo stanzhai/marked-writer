@@ -6,12 +6,13 @@
   "window": {
     "title": "Marked Writer",
     "icon": "img/markedwriter.png",
+    "frame": false,
     "position": "center",
     "resizable": true,
     "width": 1100,
-    "min_width": 675,
     "height": 680,
-    "min_height": 650
+    "min_width": 1020,
+    "min_height": 615
   },
   "__JSON_NOTE": "All paths are relative to this json file",
   "dependencies": {
