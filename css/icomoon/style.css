@@ -26,6 +26,9 @@
 .icon-close:before {
 	content: "\e600";
 }
+.icon-file:before {
+	content: "\e612";
+}
 .icon-minus:before {
 	content: "\e601";
 }

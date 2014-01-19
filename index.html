@@ -186,7 +186,7 @@
       <a class="title">Marked Writer</a>
       <div class="pure-menu pure-menu-open">
         <ul>
-          <li><a class="pure-menu-select" href="#writer"><span class="icon-quill"></span> 新博文</a></li>
+          <li><a class="pure-menu-select" href="#writer"><span class="icon-quill"></span> 写博文</a></li>
           <li><a href="#all-list"><span class="icon-list"></span> 博文 <span class="blog-count">(<span data-bind="text: all_count"></span>)</span></a></li>
           <li><a href="#local-list"><span class="icon-disk"></span> 未发布 <span class="blog-count">(<span data-bind="text: local_count"></span>)</span></a></li>
           <li><a href="#publish-list"><span class="icon-arrow-up"></span> 已发布 <span class="blog-count">(<span data-bind="text: publish_count"></span>)</span></a></li>
@@ -208,6 +208,7 @@
   <div id="writer" class="tab-content pure-u-1">
     <div id="editor"></div>
     <div class="footer-bar">
+      <span class="round-icon icon-file" data-bind="click: save_blog"></span>
       <span class="round-icon icon-disk" data-bind="click: save_blog"></span>
       <span class="round-icon icon-arrow-up"></span>
       <span class="round-icon icon-eye"></span>

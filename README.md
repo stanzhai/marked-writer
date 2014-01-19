@@ -1,4 +1,4 @@
-marked-writer
+Marked Writer
 =============
 
-A markdown blog writer based on node-webkit
+A markdown blog writer based on node-webkit.
